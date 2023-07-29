@@ -1,0 +1,1 @@
+enum Permission {member, moderator, owner}

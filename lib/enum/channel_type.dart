@@ -1,0 +1,1 @@
+enum ChannelType { text, voice, video}
