@@ -12,7 +12,7 @@ void runApp(MutterAPI api) async {
   String? currentCommand;
   currUsername = api.getCurrentLoggedIn();
   print(
-      "Welcome to Mutter! Read the documentation to get started on using the interface");
+      "Welcome to Mutter! Read the documentation to get started on using the interface. Type \"exit\" to close the application.");
   print(currUsername);
   while (true) {
     try {
@@ -74,6 +74,9 @@ void runApp(MutterAPI api) async {
         print("Role assigned successfully");
       } else if(ccs[0] == "display-roles") {
         api.displayRoles(ccs[1]);
+      } else if(ccs[0] == "exit") {
+        print("See you soon!");
+        break;
       }
     } on Exception catch (e) {
       print("$e");

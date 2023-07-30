@@ -1,13 +1,21 @@
 import 'package:mutter_cli/db/database_crud.dart';
 import 'package:mutter_cli/cli/message.dart';
+import 'package:bcrypt/bcrypt.dart';
 
 class User {
   late String username;
   late String password;
   var loggedIn = false;
   late List<DirectMessage> directMessages;
-  User({required this.username, required this.password, required this.loggedIn, required this.directMessages});
-
+  User(
+      this.username,
+      password,
+      this.loggedIn,
+      this.directMessages) {
+        var salt = BCrypt.gensalt();
+    this.password = BCrypt.hashpw(password, salt);
+  }
+  //to be called upon object creation
   Map<String, dynamic> toMap() {
     var mappedMessages =
         directMessages.map((message) => message.toMap()).toList();
@@ -25,10 +33,10 @@ class User {
         .map((dm) => DirectMessage.fromMap(dm))
         .toList();
     return User(
-      username : map['username'],
-      password : map['password'],
-      loggedIn : map['loggedIn'],
-      directMessages : unmappedMessages,
+      map['username'],
+      map['password'],
+      map['loggedIn'],
+      unmappedMessages,
     );
   }
 
@@ -36,13 +44,18 @@ class User {
     //abhi ke liye no checks
     // var h = Crypt(this.password);
     // if(!h.match(password))
-    if (!(this.password == password)) {
+    bool authed = BCrypt.checkpw(password, this.password);
+    if (!(authed)) {
       throw Exception("Error : Incorrect password");
     }
-    print("Idhr toh aa rhi?");
     this.loggedIn = true;
     await UserIO.updateDB(
-        User(username : this.username, password : this.password,loggedIn :  true, directMessages : this.directMessages), "users");
+        User(
+            this.username,
+            this.password,
+            true,
+            this.directMessages),
+        "users");
   }
 
   Future<void> register() async {
@@ -54,7 +67,11 @@ class User {
   Future<void> logout() async {
     //abhi ke liye no checks
     await UserIO.updateDB(
-        User(username : this.username,password : this.password, loggedIn : false, directMessages : directMessages),
+        User(
+            this.username,
+            this.password,
+            false,
+            directMessages),
         "users");
   }
 
@@ -89,7 +106,7 @@ class User {
     //   j++;
     // }
     List<DirectMessage> dms = getDMs(sender);
-    for(DirectMessage dm in dms) {
+    for (DirectMessage dm in dms) {
       print("${dm.sender.username} : ${dm.content}");
     }
   }

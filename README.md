@@ -18,9 +18,9 @@ Use "add-channel server_name channel_name channel_perms channel_type parent_cate
 Channels can have three levels of permission - member, moderator, and owner, allowing varying levels of access. Channels currently support three types - text, voice and video.
 # Send message in a server
 Use "send-msg server_name channel_name", to send a message in a text channel. (Can be done only while logged in). You will then be prompted to enter your message. 
-# Displaying users, servers, channels and messages
+# Displaying users, servers, channels, roles and messages
 Use the format "display-item" to display a list of said item. Here, users, servers, channels and messages are currently supported.
-NOTE : specify server_name for display-messages.
+NOTE : specify server_name for display-messages and display-roles.
 # Sending direct messages to other users
 Use "dm receiver_name" and enter the message upon being prompted. Use "show-dms user" to show dm history with the user mentioned. (requires login).
 # Creating a new role for a server

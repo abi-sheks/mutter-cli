@@ -32,10 +32,10 @@ class MutterAPI {
       throw Exception("User already exists");
     }
     var newUser = User(
-        username: username,
-        password: password,
-        loggedIn: false,
-        directMessages: emptyDms);
+        username,
+        password,
+        false,
+        emptyDms);
 
     users.add(newUser);
     print("we got herw2 ");
