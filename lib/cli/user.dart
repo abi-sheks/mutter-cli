@@ -59,9 +59,7 @@ class User {
   }
 
   Future<void> register() async {
-    print("hehehe");
     await DatabaseIO.addToDB(this, "users");
-    print("done");
   }
 
   Future<void> logout() async {
@@ -107,7 +105,7 @@ class User {
     // }
     List<DirectMessage> dms = getDMs(sender);
     for (DirectMessage dm in dms) {
-      print("${dm.sender.username} : ${dm.content}");
+      print("${dm.ts.toString()}  ${dm.sender.username} : ${dm.content}");
     }
   }
 

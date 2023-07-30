@@ -74,7 +74,13 @@ void runApp(MutterAPI api) async {
         print("Role assigned successfully");
       } else if(ccs[0] == "display-roles") {
         api.displayRoles(ccs[1]);
-      } else if(ccs[0] == "exit") {
+      } else if(ccs[0] == "channel-to-cat") {
+        await api.addChannelToCategory(ccs[1], ccs[2], ccs[3], currUsername);
+        }
+        else if(ccs[0] == "change-perm") {
+          await api.changePermission(ccs[1], ccs[2], ccs[3], currUsername);
+        }
+        else if(ccs[0] == "exit") {
         print("See you soon!");
         break;
       }

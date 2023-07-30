@@ -139,6 +139,28 @@ class Server {
     role.holders.add(member);
     await ServerIO.updateDB(this, "servers");
   }
+  Future<void> assignChannel(String channelName, String categoryName) async {
+    var reqChannel = getChannel(channelName);
+    var reqCategory = getCategory(categoryName);
+    for(Channel channel in reqCategory.channels) {
+      if(channel.channelName == reqChannel.channelName) {
+        throw Exception("Channel is already in the required category");
+      }
+    }
+    for(Category category in categories) {
+      if(category.channels.map((e) => e.channelName).toList().contains(channelName)) {
+        category.channels.remove(reqChannel);
+      }
+    }
+    reqCategory.channels.add(reqChannel);
+    await ServerIO.updateDB(this, "servers");
+  }
+  Future<void> changePerm(String channelName, Permission perm) async {
+    var reqChannel = getChannel(channelName);
+    reqChannel.permission = perm;
+    await ServerIO.updateDB(this, "servers");
+
+  }
 
   User getMember(String name) {
     return members.firstWhere((member) => member.username == name,

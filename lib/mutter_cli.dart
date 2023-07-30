@@ -21,11 +21,9 @@ class MutterAPI {
 
   //Users
   Future<void> registerUser(String? username, String? password) async {
-    print("we got hre");
     if (username == null || password == null) {
       throw InvalidCredentialsException();
     }
-    print("here");
     List<DirectMessage> emptyDms = [];
     var usernames = users.map((e) => e.username).toList();
     if (usernames.contains(username)) {
@@ -38,9 +36,7 @@ class MutterAPI {
         emptyDms);
 
     users.add(newUser);
-    print("we got herw2 ");
     await newUser.register();
-    print("smn here?");
   }
 
   Future<void> loginUser(String? username, String? password) async {
@@ -245,6 +241,14 @@ class MutterAPI {
     var reqRole = reqServer.getRole(roleName);
     var reqMember = reqServer.getMember(memberName);
     await reqServer.assignRole(reqRole, reqMember);
+  }
+  Future<void> addChannelToCategory(String? serverName, String? channelName, String? categoryName, String? callerName) async {
+    if(serverName == null || channelName == null || categoryName == null || callerName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    } 
+    var reqServer = getServer(serverName);
+    reqServer.checkOwnership(callerName);
+    await reqServer.assignChannel(channelName, categoryName);
   }
 
   void displayDms(String? receiverName, String? incomingName) {
