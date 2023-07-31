@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:core';
+
 import 'package:mutter_cli/cli/category.dart';
 import 'package:mutter_cli/cli/channel.dart';
 import 'package:mutter_cli/cli/message.dart';
@@ -29,11 +32,7 @@ class MutterAPI {
     if (usernames.contains(username)) {
       throw Exception("User already exists");
     }
-    var newUser = User(
-        username,
-        password,
-        false,
-        emptyDms);
+    var newUser = User(username, password, false, emptyDms);
 
     users.add(newUser);
     await newUser.register();
@@ -77,7 +76,7 @@ class MutterAPI {
 
   void displayUsers() {
     for (User user in users) {
-      print("${user.username} was here");
+      print("${user.username}");
     }
   }
 
@@ -111,7 +110,7 @@ class MutterAPI {
     }
     var reqUser = getUser(userName);
     var reqServer = getServer(serverName);
-    reqServer.checkOwnership(ownerName);
+    reqServer.checkAccessLevel(ownerName, 2);
     await reqServer.addMember(reqUser);
   }
 
@@ -122,7 +121,7 @@ class MutterAPI {
           "Please enter the valid credentials, or login to continue.");
     }
     var reqServer = getServer(serverName);
-    reqServer.checkOwnership(userName);
+    reqServer.checkAccessLevel(userName, 2);
     await reqServer
         .addCategory(Category(categoryName: categoryName, channels: []));
   }
@@ -162,7 +161,7 @@ class MutterAPI {
     }
 
     var reqServer = getServer(serverName);
-    reqServer.checkOwnership(userName);
+    reqServer.checkAccessLevel(userName, 2);
     await reqServer.addChannel(
         Channel(
             channelName: channelName,
@@ -213,14 +212,14 @@ class MutterAPI {
       throw Exception("Invalid command");
     }
     if (permLevel == "owner") {
-      newPerm = Permission.owner;
+      throw Exception("Owner privileges cannot be shared to other roles.");
     } else if (permLevel == "moderator") {
       newPerm = Permission.moderator;
     } else {
       newPerm = Permission.member;
     }
     var reqServer = getServer(serverName);
-    reqServer.checkOwnership(callerName);
+    reqServer.checkAccessLevel(callerName, 2);
     await reqServer
         .addRole(Role(roleName: roleName, accessLevel: newPerm, holders: []));
   }
@@ -234,21 +233,144 @@ class MutterAPI {
       throw Exception("Enter a valid command");
     }
     var reqServer = getServer(serverName);
-    reqServer.checkOwnership(callerName);
-    if(!(reqServer.isMember(memberName))) {
+    reqServer.checkAccessLevel(callerName, 2);
+    if (!(reqServer.isMember(memberName))) {
       throw Exception("User is not a member of the server");
+    }
+    if (roleName == "owner") {
+      throw Exception("There can only be one owner");
     }
     var reqRole = reqServer.getRole(roleName);
     var reqMember = reqServer.getMember(memberName);
     await reqServer.assignRole(reqRole, reqMember);
   }
-  Future<void> addChannelToCategory(String? serverName, String? channelName, String? categoryName, String? callerName) async {
-    if(serverName == null || channelName == null || categoryName == null || callerName == null) {
+
+  Future<void> addChannelToCategory(String? serverName, String? channelName,
+      String? categoryName, String? callerName) async {
+    if (serverName == null ||
+        channelName == null ||
+        categoryName == null ||
+        callerName == null) {
       throw Exception("Please enter a valid command, or login to continue");
-    } 
+    }
     var reqServer = getServer(serverName);
-    reqServer.checkOwnership(callerName);
+    reqServer.checkAccessLevel(callerName, 2);
     await reqServer.assignChannel(channelName, categoryName);
+  }
+
+  Future<void> changePermission(String? serverName, String? channelName,
+      String? newPerm, String? callerName) async {
+    if (serverName == null ||
+        channelName == null ||
+        newPerm == null ||
+        callerName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    }
+    late Permission perm;
+    var reqServer = getServer(serverName);
+    reqServer.checkAccessLevel(callerName, 2);
+    if (newPerm == "owner") {
+      perm = Permission.owner;
+    } else if (newPerm == "moderator") {
+      perm = Permission.moderator;
+    } else if (newPerm == "member") {
+      perm = Permission.member;
+    } else {
+      throw Exception("Please enter a valid permission");
+    }
+    await reqServer.changePerm(channelName, perm);
+  }
+
+  Future<void> deleteServer(String? serverName, String? callerName) async {
+    if (serverName == null || callerName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    }
+    var reqServer = getServer(serverName);
+    getUser(callerName);
+    reqServer.checkAccessLevel(callerName, 2);
+    servers.remove(reqServer);
+    await ServerIO.deleteFromDB(reqServer);
+  }
+
+  Future<void> deleteChannel(
+      String? serverName, String? channelName, String? callerName) async {
+    if (serverName == null || channelName == null || callerName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    }
+    var reqServer = getServer(serverName);
+    getUser(callerName);
+    reqServer.checkAccessLevel(callerName, 2);
+    await reqServer.removeChannel(channelName);
+  }
+
+  Future<void> deleteCategory(
+      String? serverName, String? categoryName, String? callerName) async {
+    if (serverName == null || categoryName == null || callerName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    }
+    var reqServer = getServer(serverName);
+    getUser(callerName);
+    reqServer.checkAccessLevel(callerName, 2);
+    await reqServer.removeCategory(categoryName);
+  }
+
+  Future<void> deleteRole(
+      String? serverName, String? roleName, String? callerName) async {
+    if (serverName == null || roleName == null || callerName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    }
+    var reqServer = getServer(serverName);
+    getUser(callerName);
+    reqServer.checkAccessLevel(callerName, 2);
+    await reqServer.removeRole(roleName);
+  }
+
+  Future<void> deleteMember(
+      String? serverName, String? userName, String? callerName) async {
+    if (serverName == null || userName == null || callerName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    }
+    var reqServer = getServer(serverName);
+    getUser(callerName);
+    getUser(userName);
+    reqServer.checkAccessLevel(callerName, 2);
+    //established that caller is owner
+    if (callerName == userName) {
+      throw Exception("You cannot remove yourself. Try leaving instead!");
+    }
+    await reqServer.removeMember(userName);
+  }
+
+  Future<void> changeOwnership(
+      String? serverName, String? currentOwner, String? newOwner) async {
+    if (currentOwner == null || newOwner == null || serverName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    }
+    var reqServer = getServer(serverName);
+    getUser(currentOwner);
+    getUser(newOwner);
+    reqServer.checkAccessLevel(currentOwner, 2);
+    if (!(reqServer.isMember(newOwner))) {
+      throw Exception("The specified user is not a member of the server");
+    }
+    await reqServer.swapOwner(currentOwner, newOwner);
+  }
+
+  Future<void> leaveServer(String? serverName, String? callerName) async {
+    if (serverName == null || callerName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    }
+    var reqServer = getServer(serverName);
+    getUser(callerName);
+    if (!(reqServer.isMember(callerName))) {
+      throw Exception("The user is not a member of the server");
+    }
+    //if user leaving is owner
+    if (reqServer.getRole("owner").holders[0].username == callerName) {
+      throw Exception(
+          "Please change ownership before leaving your server, as you are the owner");
+    }
+    await reqServer.removeMember(callerName);
   }
 
   void displayDms(String? receiverName, String? incomingName) {
@@ -265,22 +387,35 @@ class MutterAPI {
 
   void displayServers() {
     for (Server server in servers) {
-      print("${server.serverName} was here");
+      print("${server.serverName} ");
     }
   }
 
   void displayChannels() {
     for (Server server in servers) {
       for (Category category in server.categories) {
-        print("${category.categoryName}");
+        print(category.categoryName);
         for (Channel channel in category.channels) {
-          print("${channel.channelName}");
+          print(channel.channelName);
         }
       }
     }
   }
 
-  void displayMessages(String serverName) {
+  void displayMembers(String? serverName) {
+    if (serverName == null) {
+      throw Exception("Please enter a valid command");
+    }
+    var reqServer = getServer(serverName);
+    for (User member in reqServer.members) {
+      print(member.username);
+    }
+  }
+
+  void displayMessages(String? serverName) {
+    if (serverName == null) {
+      throw Exception("Please enter a valid command");
+    }
     var reqServer = getServer(serverName);
     for (Channel channel in reqServer.channels) {
       print("${channel.channelName} : ");
@@ -289,11 +424,12 @@ class MutterAPI {
       }
     }
   }
+
   void displayRoles(String serverName) {
     var reqServer = getServer(serverName);
-    for(Role role in reqServer.roles) {
+    for (Role role in reqServer.roles) {
       print("\n${role.roleName} (${role.accessLevel}) : \n Holders ");
-      for(User holder in role.holders) {
+      for (User holder in role.holders) {
         print("\t${holder.username}");
       }
     }

@@ -9,10 +9,8 @@ class DatabaseIO {
     var db = await connectDB(
         MONGO_URI);
     //db logic
-    print("db connected");
     var reqCollection = db.collection(collectionName);
     await reqCollection.insertOne(document.toMap());
-    print("inserted");
     db.close();
   }
 }
@@ -27,10 +25,10 @@ class UserIO extends DatabaseIO {
     db.close();
     return reqUsers.map((e) => User.fromMap(e)).toList();
   }
-  static Future<void> updateDB(dynamic document, String collectionName) async {
+  static Future<void> updateDB(dynamic document) async {
     var db = await connectDB(
         MONGO_URI);
-    var reqCollection = db.collection(collectionName);
+    var reqCollection = db.collection("users");
     await reqCollection.replaceOne({'username': document.username}, document.toMap());
     db.close();
   }
@@ -48,11 +46,18 @@ class ServerIO extends DatabaseIO {
     }
     return reqServers.map((e) => Server.fromMap(e)).toList();
   }
-  static Future<void> updateDB(dynamic document, String collectionName) async {
+  static Future<void> updateDB(dynamic document) async {
     var db = await connectDB(
         MONGO_URI);
-    var reqCollection = db.collection(collectionName);
+    var reqCollection = db.collection("servers");
     await reqCollection.replaceOne({'serverName': document.serverName}, document.toMap());
     db.close();
+  }
+  static Future<void> deleteFromDB(dynamic document) async {
+    var db = await connectDB(MONGO_URI);
+    var reqCollection = db.collection("servers");
+    await reqCollection.deleteOne({"serverName : serverName"});
+    db.close();
+
   }
 }

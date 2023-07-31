@@ -18,9 +18,9 @@ Use `add-channel server_name channel_name channel_perms channel_type parent_cate
 Channels can have three levels of permission - member, moderator, and owner, allowing varying levels of access. Channels currently support three types - text, voice and video.
 ## Send message in a server
 Use `send-msg server_name channel_name`, to send a message in a text channel. (Can be done only while logged in). You will then be prompted to enter your message. 
-## Displaying users, servers, channels, roles and messages
+## Displaying users, servers, channels, roles, members and messages
 Use the format `display-item` to display a list of said item. Here, users, servers, channels and messages are currently supported.
-NOTE : specify server_name for display-messages and display-roles.
+NOTE : specify server_name for display-messages, display-members and display-roles.
 ## Sending direct messages to other users
 Use `dm receiver_name` and enter the message upon being prompted. Use `show-dms user` to show dm history with the user mentioned. (requires login).
 ## Creating a new role for a server
@@ -31,3 +31,9 @@ Use `assign-role server_name role_name member_name` to assign a role in a server
 Use `channel-to-cat server_name channel_name category_name` to assign an existing channel in that server to an existing category. 
 ## Changing permissions for a channel (Owner only)
 Use `change-perm server_name channel_name new_perm` to change the permissions for an existing channel in server_name. Permissions can be - member, moderator or owner.
+## Deleting a server, channel, category, role or removing a member
+Use `delete-server server_name` to delete a server, and `delete_item server_name item_name` to delete items from a server. `item` can be channel, category, role or member. Note that owner privileges are required for all these actions.
+## Relinquish ownership of a server
+Use `change-ownership server_name new_owner` to give your owner rights to `new_owner`.
+## Leave a server
+Use `leave-server server_name` to leave a server. Note that yu must relinquish your ownership rights using `change-ownership` first before leaving a server if you are its owner.

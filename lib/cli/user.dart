@@ -54,8 +54,7 @@ class User {
             this.username,
             this.password,
             true,
-            this.directMessages),
-        "users");
+            this.directMessages));
   }
 
   Future<void> register() async {
@@ -69,43 +68,38 @@ class User {
             this.username,
             this.password,
             false,
-            directMessages),
-        "users");
+            directMessages));
   }
 
   Future<void> DM(User receiver, String content) async {
     receiver.directMessages.add(DirectMessage(content, this, DateTime.now()));
-    await UserIO.updateDB(receiver, "users");
+    await UserIO.updateDB(receiver);
   }
 
   void showDMs(User sender) {
-    // List<DirectMessage> senderToReceiver = this.getDMs(sender);
-    // List<DirectMessage> receiverToSender = sender.getDMs(this);
-    //needs refactoring, maybe better patterns for this
-    // int sTrLen = senderToReceiver.length;
-    // int rTsLen = receiverToSender.length;
-    // int i = 0;
-    // int j = 0;
-    // while (i < sTrLen && j < rTsLen) {
-    //   if (senderToReceiver[i].ts.isAfter(receiverToSender[j].ts)) {
-    //     print("${this.username} : ${receiverToSender[j].content}");
-    //     j++;
-    //   } else {
-    //     print("${sender.username} : ${senderToReceiver[i].content}");
-    //     i++;
-    //   }
-    // }
-    // while (i < sTrLen) {
-    //   print("${sender.username} : ${senderToReceiver[i].content}");
-    //   i++;
-    // }
-    // while (j < rTsLen) {
-    //   print("${this.username} : ${receiverToSender[j].content}");
-    //   j++;
-    // }
-    List<DirectMessage> dms = getDMs(sender);
-    for (DirectMessage dm in dms) {
-      print("${dm.ts.toString()}  ${dm.sender.username} : ${dm.content}");
+    List<DirectMessage> senderToReceiver = this.getDMs(sender);
+    List<DirectMessage> receiverToSender = sender.getDMs(this);
+    // needs refactoring, maybe better patterns for this
+    int sTrLen = senderToReceiver.length;
+    int rTsLen = receiverToSender.length;
+    int i = 0;
+    int j = 0;
+    while (i < sTrLen && j < rTsLen) {
+      if (senderToReceiver[i].ts.isAfter(receiverToSender[j].ts)) {
+        print("${this.username} : ${receiverToSender[j].content}");
+        j++;
+      } else {
+        print("${sender.username} : ${senderToReceiver[i].content}");
+        i++;
+      }
+    }
+    while (i < sTrLen) {
+      print("${sender.username} : ${senderToReceiver[i].content}");
+      i++;
+    }
+    while (j < rTsLen) {
+      print("${this.username} : ${receiverToSender[j].content}");
+      j++;
     }
   }
 

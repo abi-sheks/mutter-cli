@@ -38,7 +38,7 @@ class Server {
     members.add(newMember);
     var memberRole = getRole("member");
     memberRole.holders.add(newMember);
-    await ServerIO.updateDB(this, "servers");
+    await ServerIO.updateDB(this);
   }
 
   Future<void> addCategory(Category newCategory) async {
@@ -46,7 +46,7 @@ class Server {
       throw Exception("Category already exists");
     }
     categories.add(newCategory);
-    await ServerIO.updateDB(this, "servers");
+    await ServerIO.updateDB(this);
   }
 
   Future<void> addChannel(Channel newChannel, String parentCategoryName) async {
@@ -56,7 +56,7 @@ class Server {
     channels.add(newChannel);
     var reqCat = getCategory(parentCategoryName);
     reqCat.channels.add(newChannel);
-    await ServerIO.updateDB(this, "servers");
+    await ServerIO.updateDB(this);
   }
 
   Future<void> addMessageToChannel(
@@ -72,7 +72,7 @@ class Server {
         (role) => role.accessLevel.index >= channel.permission.index,
         orElse: () => throw Exception("Access not allowed for this channel"));
     channel.messages.add(message);
-    await ServerIO.updateDB(this, "servers");
+    await ServerIO.updateDB(this);
   }
 
   Map<String, dynamic> toMap() {
@@ -133,11 +133,11 @@ class Server {
       }
     }
     roles.add(newRole);
-    await ServerIO.updateDB(this, "servers");
+    await ServerIO.updateDB(this);
   }
   Future<void> assignRole(Role role, User member) async {
     role.holders.add(member);
-    await ServerIO.updateDB(this, "servers");
+    await ServerIO.updateDB(this);
   }
   Future<void> assignChannel(String channelName, String categoryName) async {
     var reqChannel = getChannel(channelName);
@@ -153,13 +153,54 @@ class Server {
       }
     }
     reqCategory.channels.add(reqChannel);
-    await ServerIO.updateDB(this, "servers");
+    await ServerIO.updateDB(this);
   }
   Future<void> changePerm(String channelName, Permission perm) async {
     var reqChannel = getChannel(channelName);
     reqChannel.permission = perm;
-    await ServerIO.updateDB(this, "servers");
-
+    await ServerIO.updateDB(this);
+  }
+  Future<void> removeChannel(String channelName) async {
+    var reqChannel = getChannel(channelName);
+    outer_loop:
+    for(Category category in categories) {
+      for(Channel channel in category.channels) {
+        if(channel.channelName == reqChannel.channelName) {
+          category.channels.remove(channel);
+          break outer_loop;
+        }
+      }
+    }
+    await ServerIO.updateDB(this);
+  }
+  Future<void> removeCategory(String categoryName) async {
+    var reqCategory = getCategory(categoryName);
+    categories.remove(reqCategory);
+    await ServerIO.updateDB(this);
+  }
+  Future<void> removeRole(String roleName) async {
+    var reqRole = getRole(roleName);
+    roles.remove(reqRole);
+    await ServerIO.updateDB(this);
+  }
+  Future<void> removeMember(String memberName) async {
+    var reqMember = getMember(memberName);
+    members.remove(reqMember);
+    for(Role role in roles) {
+      for(User holder in role.holders) {
+        if(holder.username == reqMember.username) {
+          role.holders.remove(holder);
+        }
+      }
+    }
+    await ServerIO.updateDB(this);
+  }
+  Future<void> swapOwner(String currOwner, String newOwner) async {
+    var ownerRole = getRole("owner");
+    var owner = getMember(newOwner);
+    ownerRole.holders.removeLast();
+    ownerRole.holders.add(owner);
+    await ServerIO.updateDB(this);
   }
 
   User getMember(String name) {
@@ -189,18 +230,16 @@ class Server {
     return categories.firstWhere((category) => category.categoryName == name,
         orElse: () => throw Exception("Category does not exist"));
   }
-
-  void checkOwnership(String username) {
+    void checkAccessLevel(String username, int accessNo) {
     var user = getMember(username);
     if(!(user.loggedIn)) {
-      throw Exception("Owner is not logged in");
+      throw Exception("User is not logged in");
     }
     List<Role> senderRoles = extractRoles(user);
     print(senderRoles);
-    senderRoles.firstWhere((element) => element.accessLevel.index == 2,
-        orElse: () => throw Exception("User is not owner of this server"));
+    senderRoles.firstWhere((element) => element.accessLevel.index == accessNo,
+        orElse: () => throw Exception("You are not authorised for this action"));
   }
-
   List<Role> extractRoles(User user) {
     List<Role> senderRoles = [];
     for (Role role in roles) {
