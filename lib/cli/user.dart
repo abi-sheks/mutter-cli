@@ -7,14 +7,7 @@ class User {
   late String password;
   var loggedIn = false;
   late List<DirectMessage> directMessages;
-  User(
-      this.username,
-      password,
-      this.loggedIn,
-      this.directMessages) {
-        var salt = BCrypt.gensalt();
-    this.password = BCrypt.hashpw(password, salt);
-  }
+  User(this.username, this.password, this.loggedIn, this.directMessages);
   //to be called upon object creation
   Map<String, dynamic> toMap() {
     var mappedMessages =
@@ -41,34 +34,25 @@ class User {
   }
 
   Future<void> login(String password) async {
-    //abhi ke liye no checks
-    // var h = Crypt(this.password);
-    // if(!h.match(password))
     bool authed = BCrypt.checkpw(password, this.password);
     if (!(authed)) {
       throw Exception("Error : Incorrect password");
     }
     this.loggedIn = true;
     await UserIO.updateDB(
-        User(
-            this.username,
-            this.password,
-            true,
-            this.directMessages));
+        User(this.username, this.password, true, this.directMessages));
   }
 
   Future<void> register() async {
+    var salt = BCrypt.gensalt();
+    this.password = BCrypt.hashpw(password, salt);
     await DatabaseIO.addToDB(this, "users");
   }
 
   Future<void> logout() async {
     //abhi ke liye no checks
     await UserIO.updateDB(
-        User(
-            this.username,
-            this.password,
-            false,
-            directMessages));
+        User(this.username, this.password, false, directMessages));
   }
 
   Future<void> DM(User receiver, String content) async {
@@ -86,19 +70,23 @@ class User {
     int j = 0;
     while (i < sTrLen && j < rTsLen) {
       if (senderToReceiver[i].ts.isAfter(receiverToSender[j].ts)) {
-        print("${this.username} : ${receiverToSender[j].content}");
+        print(
+            "${this.username} : ${receiverToSender[j].content}   at   ${receiverToSender[j].ts.toString()}");
         j++;
       } else {
-        print("${sender.username} : ${senderToReceiver[i].content}");
+        print(
+            "${sender.username} : ${senderToReceiver[i].content}   at   ${senderToReceiver[i].ts.toString()}");
         i++;
       }
     }
     while (i < sTrLen) {
-      print("${sender.username} : ${senderToReceiver[i].content}");
+      print(
+          "${sender.username} : ${senderToReceiver[i].content}   at   ${senderToReceiver[i].ts.toString()}");
       i++;
     }
     while (j < rTsLen) {
-      print("${this.username} : ${receiverToSender[j].content}");
+      print(
+          "${this.username} : ${receiverToSender[j].content}   at   ${receiverToSender[j].ts.toString()}");
       j++;
     }
   }

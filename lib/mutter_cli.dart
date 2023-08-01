@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'dart:core';
-
 import 'package:mutter_cli/cli/category.dart';
 import 'package:mutter_cli/cli/channel.dart';
 import 'package:mutter_cli/cli/message.dart';
@@ -11,6 +9,7 @@ import 'package:mutter_cli/cli/exceptions/invalid_creds.dart';
 import 'package:mutter_cli/db/database_crud.dart';
 import 'package:mutter_cli/enum/channel_type.dart';
 import 'package:mutter_cli/enum/permissions.dart';
+import 'package:mutter_cli/enum/server_type.dart';
 
 class MutterAPI {
   List<User> users = [];
@@ -46,8 +45,8 @@ class MutterAPI {
       throw Exception("Please logout of the current session to login again");
     }
     var reqUser = getUser(username);
-    someoneLoggedIn = true;
     await reqUser.login(password);
+    someoneLoggedIn = true;
   }
 
   Future<void> logoutUser(String? username) async {
@@ -81,10 +80,20 @@ class MutterAPI {
   }
 
   //Servers
-  Future<void> createServer(String? serverName, String? userName) async {
+  Future<void> createServer(String? serverName, String? userName, String? serverPerm) async {
+    late JoinPerm perm;
     if (serverName == null || userName == null) {
       throw Exception(
           "Please enter the required credentials, or login to continue.");
+    }
+    if(serverPerm == null) {
+      perm = JoinPerm.open;
+    }
+    if(serverPerm == "closed") {
+      perm = JoinPerm.closed;
+    }
+    else {
+      perm = JoinPerm.open;
     }
     var creator = getUser(userName);
     var newServer = Server(
@@ -92,7 +101,8 @@ class MutterAPI {
         members: [],
         roles: [],
         categories: [Category(categoryName: "none", channels: [])],
-        channels: []);
+        channels: [],
+        joinPerm: perm);
     servers.add(newServer);
     await newServer.instantiateServer(creator);
   }
@@ -354,6 +364,20 @@ class MutterAPI {
       throw Exception("The specified user is not a member of the server");
     }
     await reqServer.swapOwner(currentOwner, newOwner);
+  }
+  Future<void> joinServer(String? serverName, String? joinerName) async {
+    if(serverName == null || joinerName == null) {
+      throw Exception("Please enter a valid command, or login to continue");
+    }
+    var reqUser = getUser(joinerName);
+    var reqServer = getServer(serverName);
+    if(reqServer.isMember(reqUser.username)) {
+      throw Exception("The user is already a member of the server");
+    }
+    if(reqServer.joinPerm == JoinPerm.closed) {
+      throw Exception("The server is not open to join, ask to be added to the server by the owner");
+    }
+    await reqServer.addMember(reqUser);
   }
 
   Future<void> leaveServer(String? serverName, String? callerName) async {

@@ -5,6 +5,7 @@ import 'package:mutter_cli/cli/message.dart';
 import 'package:mutter_cli/enum/permissions.dart';
 import 'package:mutter_cli/cli/channel.dart';
 import 'package:mutter_cli/db/database_crud.dart';
+import 'package:mutter_cli/enum/server_type.dart';
 
 class Server {
   List<User> members;
@@ -12,12 +13,14 @@ class Server {
   List<Category> categories;
   List<Channel> channels;
   late String serverName;
+  late JoinPerm joinPerm;
   Server(
       {required this.serverName,
       required this.members,
       required this.roles,
       required this.categories,
-      required this.channels});
+      required this.channels,
+      this.joinPerm = JoinPerm.open});
   //called only on server creation
   Future<void> instantiateServer(User owner) async {
     members.add(owner);
@@ -78,14 +81,16 @@ class Server {
   Map<String, dynamic> toMap() {
     var mappedMembers = members.map((member) => member.toMap()).toList();
     var mappedRoles = roles.map((role) => role.toMap()).toList();
-    var mappedCategories = categories.map((category) => category.toMap()).toList();
+    var mappedCategories =
+        categories.map((category) => category.toMap()).toList();
     var mappedChannels = channels.map((channel) => channel.toMap()).toList();
     return {
       'serverName': serverName,
       'members': mappedMembers,
       'roles': mappedRoles,
-      'categories' : mappedCategories,
-      "channels" : mappedChannels,
+      'categories': mappedCategories,
+      "channels": mappedChannels,
+      "joinPerm": joinPerm.toString(),
       'finder': 'finder',
     };
   }
@@ -95,6 +100,7 @@ class Server {
     late List<Role> unmappedRoles;
     late List<Category> unmappedCategories;
     late List<Channel> unmappedChannels;
+    late JoinPerm perm;
     if (map['members'] == null) {
       unmappedMembers = [];
     }
@@ -107,10 +113,14 @@ class Server {
     if (map['channels'] == null) {
       unmappedChannels = [];
     }
-    // var mappedMembers = map['members'] as List<Map<String, dynamic>>;
+    if(map['joinPerm'] == "JoinPerm.closed") {
+      perm = JoinPerm.closed;
+    }
+    else {
+      perm = JoinPerm.open;
+    }
     unmappedMembers =
         (map['members'] as List).map((member) => User.fromMap(member)).toList();
-    // var mappedRoles = map['roles'] as List<Map<String, dynamic>>;
     unmappedRoles =
         (map['roles'] as List).map((role) => Role.fromMap(role)).toList();
     unmappedCategories = (map['categories'] as List)
@@ -124,48 +134,57 @@ class Server {
         members: unmappedMembers,
         roles: unmappedRoles,
         categories: unmappedCategories,
-        channels: unmappedChannels);
+        channels: unmappedChannels,
+        joinPerm: perm);
   }
+
   Future<void> addRole(Role newRole) async {
-    for(Role role in roles) {
-      if(role.roleName == newRole.roleName) {
+    for (Role role in roles) {
+      if (role.roleName == newRole.roleName) {
         throw Exception("Role already exists on this server");
       }
     }
     roles.add(newRole);
     await ServerIO.updateDB(this);
   }
+
   Future<void> assignRole(Role role, User member) async {
     role.holders.add(member);
     await ServerIO.updateDB(this);
   }
+
   Future<void> assignChannel(String channelName, String categoryName) async {
     var reqChannel = getChannel(channelName);
     var reqCategory = getCategory(categoryName);
-    for(Channel channel in reqCategory.channels) {
-      if(channel.channelName == reqChannel.channelName) {
+    for (Channel channel in reqCategory.channels) {
+      if (channel.channelName == reqChannel.channelName) {
         throw Exception("Channel is already in the required category");
       }
     }
-    for(Category category in categories) {
-      if(category.channels.map((e) => e.channelName).toList().contains(channelName)) {
+    for (Category category in categories) {
+      if (category.channels
+          .map((e) => e.channelName)
+          .toList()
+          .contains(channelName)) {
         category.channels.remove(reqChannel);
       }
     }
     reqCategory.channels.add(reqChannel);
     await ServerIO.updateDB(this);
   }
+
   Future<void> changePerm(String channelName, Permission perm) async {
     var reqChannel = getChannel(channelName);
     reqChannel.permission = perm;
     await ServerIO.updateDB(this);
   }
+
   Future<void> removeChannel(String channelName) async {
     var reqChannel = getChannel(channelName);
     outer_loop:
-    for(Category category in categories) {
-      for(Channel channel in category.channels) {
-        if(channel.channelName == reqChannel.channelName) {
+    for (Category category in categories) {
+      for (Channel channel in category.channels) {
+        if (channel.channelName == reqChannel.channelName) {
           category.channels.remove(channel);
           break outer_loop;
         }
@@ -173,28 +192,32 @@ class Server {
     }
     await ServerIO.updateDB(this);
   }
+
   Future<void> removeCategory(String categoryName) async {
     var reqCategory = getCategory(categoryName);
     categories.remove(reqCategory);
     await ServerIO.updateDB(this);
   }
+
   Future<void> removeRole(String roleName) async {
     var reqRole = getRole(roleName);
     roles.remove(reqRole);
     await ServerIO.updateDB(this);
   }
+
   Future<void> removeMember(String memberName) async {
     var reqMember = getMember(memberName);
     members.remove(reqMember);
-    for(Role role in roles) {
-      for(User holder in role.holders) {
-        if(holder.username == reqMember.username) {
+    for (Role role in roles) {
+      for (User holder in role.holders) {
+        if (holder.username == reqMember.username) {
           role.holders.remove(holder);
         }
       }
     }
     await ServerIO.updateDB(this);
   }
+
   Future<void> swapOwner(String currOwner, String newOwner) async {
     var ownerRole = getRole("owner");
     var owner = getMember(newOwner);
@@ -207,9 +230,10 @@ class Server {
     return members.firstWhere((member) => member.username == name,
         orElse: () => throw Exception("Member does not exist"));
   }
+
   bool isMember(String name) {
-    for(User member in members) {
-      if(member.username == name) {
+    for (User member in members) {
+      if (member.username == name) {
         return true;
       }
     }
@@ -230,20 +254,26 @@ class Server {
     return categories.firstWhere((category) => category.categoryName == name,
         orElse: () => throw Exception("Category does not exist"));
   }
-    void checkAccessLevel(String username, int accessNo) {
+
+  void checkAccessLevel(String username, int accessNo) {
     var user = getMember(username);
-    if(!(user.loggedIn)) {
+    if (!(user.loggedIn)) {
       throw Exception("User is not logged in");
     }
     List<Role> senderRoles = extractRoles(user);
     print(senderRoles);
     senderRoles.firstWhere((element) => element.accessLevel.index == accessNo,
-        orElse: () => throw Exception("You are not authorised for this action"));
+        orElse: () =>
+            throw Exception("You are not authorised for this action"));
   }
+
   List<Role> extractRoles(User user) {
     List<Role> senderRoles = [];
     for (Role role in roles) {
-      if (role.holders.map((e) => e.username).toList().contains(user.username)) {
+      if (role.holders
+          .map((e) => e.username)
+          .toList()
+          .contains(user.username)) {
         senderRoles.add(role);
       }
     }

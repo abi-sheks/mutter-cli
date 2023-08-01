@@ -1,14 +1,18 @@
-A sample command-line application with an entrypoint in `bin/`, library code
-in `lib/`, and example unit test in `test/`.
+# Registering and logging in
 
 ## Register a user
-Use the command `register username password` to register a new user on the platform.
+Use the command `register username password` to register a new user on the platform. Note that you will need to login separately after registering.
 ## Login
-Use `login username password` to login as an existing user. Note that only one user can be logged in during a session.
+Use `login username password` to login as an existing user. Note that only one user can be logged in during a session. 
 ## Logout
 Use `logout` to logout of the session.
+
+# Servers
+
 ## Create a server
-Use `create-server server_name` to create a new server.  You will automatically be marked as the owner of that server and gain the ability to add other users, add categories, channels and manage permissions.
+Use `create-server server_name join_permission` to create a new server.  You will automatically be marked as the owner of that server and gain the ability to add other users, add categories, channels and manage permissions. `join_permission` can be either set as open or closed. Open servers can be joined by any users, while closed servers require owner to add new members. It is set to open by default.
+## Joining a server 
+Use `join-server server_name` to join a server, granted the server is open.
 ## Add users to a server
 Use `add-member server_name user_name` to add existing users to a server. Ypu must be logged in to do so. The added user will automatically be given member privileges.
 ## Add categories to a server
@@ -21,8 +25,6 @@ Use `send-msg server_name channel_name`, to send a message in a text channel. (C
 ## Displaying users, servers, channels, roles, members and messages
 Use the format `display-item` to display a list of said item. Here, users, servers, channels and messages are currently supported.
 NOTE : specify server_name for display-messages, display-members and display-roles.
-## Sending direct messages to other users
-Use `dm receiver_name` and enter the message upon being prompted. Use `show-dms user` to show dm history with the user mentioned. (requires login).
 ## Creating a new role for a server
 Use `create-role server_name role_name role_permission` to create a new role for a server (owner privileges required). Note that role names must be unique for a server. Permissions can be - owner, moderator or member (by default).
 ## Assign an existing role in a server to a member
@@ -37,3 +39,11 @@ Use `delete-server server_name` to delete a server, and `delete_item server_name
 Use `change-ownership server_name new_owner` to give your owner rights to `new_owner`.
 ## Leave a server
 Use `leave-server server_name` to leave a server. Note that yu must relinquish your ownership rights using `change-ownership` first before leaving a server if you are its owner.
+
+# DMs
+
+## Sending direct messages to other users
+Use `dm receiver_name` and enter the message upon being prompted. Use `show-dms user` to show dm history with the user mentioned. (requires login).
+## Seeing DM history between two users
+Use `show-dms other_party` to see your DM history with `other_party`.
+

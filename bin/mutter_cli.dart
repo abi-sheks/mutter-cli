@@ -13,7 +13,6 @@ void runApp(MutterAPI api) async {
   currUsername = api.getCurrentLoggedIn();
   print(
       "Welcome to Mutter! Read the documentation to get started on using the interface. Type \"exit\" to close the application.");
-  print(currUsername);
   loop:
   while (true) {
     try {
@@ -43,9 +42,13 @@ void runApp(MutterAPI api) async {
             print("Successfully logged out, see you again!");
             break;
           }
+        case 'current-session' :
+        {
+          print("$currUsername is logged in");
+        }  
         case "create-server":
           {
-            await api.createServer(ccs[1], currUsername);
+            await api.createServer(ccs[1], currUsername, ccs[2]);
             print("Created server succesfully");
             break;
           }
@@ -215,10 +218,11 @@ void runApp(MutterAPI api) async {
             }
             break;
           }
-        case "change-ownership" : {
-          await api.changeOwnership(ccs[1], currUsername, ccs[2]);
-          break;
-        }
+        case "change-ownership":
+          {
+            await api.changeOwnership(ccs[1], currUsername, ccs[2]);
+            break;
+          }
         case "leave-server":
           {
             print("Are you sure you want to proceed? (y/n)");
@@ -232,6 +236,11 @@ void runApp(MutterAPI api) async {
               print("Member deleted");
             }
             break;
+          }
+        case 'join-server':
+          {
+            await api.joinServer(ccs[1], currUsername);
+            print("Server joined successfully.");
           }
         case "exit":
           {
